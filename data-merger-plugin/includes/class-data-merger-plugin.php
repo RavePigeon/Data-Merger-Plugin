@@ -91,6 +91,108 @@ class Data_Merger_Plugin {
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (id)
             ) $charset_collate;",
+            $wpdb->prefix . 'dynamic_seating_config' => "CREATE TABLE {$wpdb->prefix}dynamic_seating_config (
+                id INT AUTO_INCREMENT,
+                matrix_type TEXT,
+                matrix_item_name_template TEXT,
+                class TEXT,
+                parent TEXT,
+                product_code TEXT,
+                brand_name TEXT,
+                supplier_code TEXT,
+                price_price DECIMAL(10,2),
+                price_currency VARCHAR(10),
+                price_level TEXT,
+                price_qty TEXT,
+                supplier_price DECIMAL(10,2),
+                preferred_supplier TEXT,
+                supplier_name TEXT,
+                department TEXT,
+                copy_from_sales_order TEXT,
+                tax_code TEXT,
+                special_order_item TEXT,
+                sales_description TEXT,
+                purchase_description TEXT,
+                product_category TEXT,
+                attribute_name TEXT,
+                size_custitem20 TEXT,
+                matrix_size TEXT,
+                colour_custitem26 TEXT,
+                matrix_colour TEXT,
+                frame_colour_custitem17 TEXT,
+                matrix_frame_colour TEXT,
+                material_type_custitem27 TEXT,
+                matrix_material_type TEXT,
+                options_custitem28 TEXT,
+                matrix_options TEXT,
+                stock_description TEXT,
+                di_type_custitem24 TEXT,
+                di_type_matrix_options TEXT,
+                next_day_cost DECIMAL(10,2),
+                next_day_delivery_assembled TEXT,
+                standard_delivery_assembled TEXT,
+                standard_delivery_cost DECIMAL(10,2),
+                standard_delivery_installation TEXT,
+                express_delivery TEXT,
+                express_delivery_installation TEXT,
+                arm_height TEXT,
+                arm_type TEXT,
+                arms_included TEXT,
+                arms_removable TEXT,
+                arm_width TEXT,
+                back_height TEXT,
+                back_width TEXT,
+                carbon_footprint TEXT,
+                detailed_description TEXT,
+                display_name TEXT,
+                depth_of_box TEXT,
+                featured_description TEXT,
+                flat_packed_or_assembled TEXT,
+                gross_weight_of_box TEXT,
+                headrest_type TEXT,
+                height_of_box_mm TEXT,
+                manufacturer TEXT,
+                overall_depth TEXT,
+                overall_height TEXT,
+                overall_width TEXT,
+                preferred_location TEXT,
+                product_weight TEXT,
+                rrp DECIMAL(10,2),
+                recommended_usage TEXT,
+                si_eori_number TEXT,
+                seat_depth TEXT,
+                seat_height TEXT,
+                seat_width TEXT,
+                store_description TEXT,
+                store_display_name TEXT,
+                weight TEXT,
+                weight_units TEXT,
+                width_of_box TEXT,
+                filing_drawers TEXT,
+                height_under_desk TEXT,
+                internal_drawer_depth TEXT,
+                internal_drawer_height TEXT,
+                leg_type TEXT,
+                number_of_drawers TEXT,
+                no_of_shelves TEXT,
+                test_certificate TEXT,
+                thickness TEXT,
+                type_of_goods TEXT,
+                warranty TEXT,
+                max_weight_supported TEXT,
+                visibility TEXT,
+                cost_estimate_type TEXT,
+                external_systems_2 TEXT,
+                material TEXT,
+                option1_name TEXT,
+                option1_value TEXT,
+                option2_name TEXT,
+                option2_value TEXT,
+                option3_name TEXT,
+                option3_value TEXT,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (id)
+            ) $charset_collate;",
         ];
 
         foreach ($tables as $sql) {
@@ -177,6 +279,14 @@ class Data_Merger_Plugin {
             'manage_options',
             'data-merger-magento-specials',
             [$this, 'export_magento_specials_page']
+        );
+        add_submenu_page(
+            'data-merger-admin',
+            'DOS Import',
+            'DOS Import',
+            'manage_options',
+            'data-merger-dos-import',
+            [$this, 'dos_import_page']
         );
     }
 
@@ -919,5 +1029,212 @@ class Data_Merger_Plugin {
             echo '</tr>';
         }
         echo '</tbody></table>';
+    }
+
+    // ---- DOS Import section ----
+    public function dos_import_page() {
+        echo '<div class="wrap">';
+        echo '<h1>DOS Import</h1>';
+        echo '<p>Upload a CSV file to import DOS (Dynamic Office Seating) configuration data into the dynamic_seating_config table.</p>';
+        $this->handle_dos_csv_upload();
+        $this->render_dos_table();
+        echo '</div>';
+    }
+
+    private function handle_dos_csv_upload() {
+        echo '<h2>Upload DOS CSV</h2>';
+        echo '<form method="post" enctype="multipart/form-data">
+            <input type="file" name="dos_csv_file" accept=".csv"/>
+            <input type="submit" name="upload_dos_csv" value="Upload CSV" class="button button-primary"/>
+        </form>';
+
+        if (isset($_POST['upload_dos_csv']) && !empty($_FILES['dos_csv_file']['tmp_name'])) {
+            $result = $this->import_dos_csv($_FILES['dos_csv_file']['tmp_name']);
+            if ($result['success']) {
+                echo '<div class="updated notice"><p>DOS CSV imported successfully. ' . $result['count'] . ' records processed.</p></div>';
+            } else {
+                echo '<div class="error notice"><p>Error importing DOS CSV: ' . esc_html($result['error']) . '</p></div>';
+            }
+        }
+    }
+
+    private function import_dos_csv($file) {
+        global $wpdb;
+        $handle = fopen($file, "r");
+        if (!$handle) return ['success' => false, 'error' => 'Cannot open CSV file.'];
+
+        $columns = fgetcsv($handle);
+        if (!$columns) return ['success' => false, 'error' => 'CSV has no header row.'];
+
+        // Remove BOM if present
+        if (isset($columns[0])) {
+            $columns[0] = preg_replace('/^\xEF\xBB\xBF/', '', $columns[0]);
+        }
+
+        // Map CSV headers to database columns
+        $csv_to_db_map = [
+            'Matrix Type' => 'matrix_type',
+            'MATRIX ITEM NAME TEMPLATE' => 'matrix_item_name_template',
+            'Class' => 'class',
+            'Parent' => 'parent',
+            'Product Code' => 'product_code',
+            'Brand Name' => 'brand_name',
+            'Supplier Code' => 'supplier_code',
+            'Price : Price' => 'price_price',
+            'Price : Currency' => 'price_currency',
+            'Price : Level' => 'price_level',
+            'Price : Qty' => 'price_qty',
+            'Supplier Price' => 'supplier_price',
+            'Preffered Supplier' => 'preferred_supplier',
+            'Supplier Name' => 'supplier_name',
+            'Department' => 'department',
+            'COPY FROM SALES ORDER' => 'copy_from_sales_order',
+            'Tax Code' => 'tax_code',
+            'SPECIAL ORDER ITEM' => 'special_order_item',
+            'Sales Description' => 'sales_description',
+            'Purchase Description (Same as column S)' => 'purchase_description',
+            'Product Category' => 'product_category',
+            'Attribute Name' => 'attribute_name',
+            'Size (custitem20)' => 'size_custitem20',
+            'Matrix Size' => 'matrix_size',
+            'Colour {custitem26}' => 'colour_custitem26',
+            'Matrix Colour' => 'matrix_colour',
+            'Frame Colour {custitem17}' => 'frame_colour_custitem17',
+            'Matrix Frame Colour' => 'matrix_frame_colour',
+            'Material Type{custitem27)' => 'material_type_custitem27',
+            'Matrix Material Type' => 'matrix_material_type',
+            'Options{custitem28}' => 'options_custitem28',
+            'Matrix Options' => 'matrix_options',
+            'Stock Description' => 'stock_description',
+            'DI Type{custitem24}' => 'di_type_custitem24',
+            'DI Type Matrix Options' => 'di_type_matrix_options',
+            'Next Day Cost' => 'next_day_cost',
+            'Next Day Delivery Assembled' => 'next_day_delivery_assembled',
+            'Standard Delivery Assembled' => 'standard_delivery_assembled',
+            'STANDARD DELIVERY COST' => 'standard_delivery_cost',
+            'STANDARD DELIVERY & INSTALLATION' => 'standard_delivery_installation',
+            'EXPRESS DELIVERY' => 'express_delivery',
+            'EXPRESS DELIVERY INSTALATION' => 'express_delivery_installation',
+            'Arm Height' => 'arm_height',
+            'Arm Type' => 'arm_type',
+            'Arms Included' => 'arms_included',
+            'Arms Removeable' => 'arms_removable',
+            'Arm Width' => 'arm_width',
+            'Back Height' => 'back_height',
+            'Back Width' => 'back_width',
+            'Carbon Footprint' => 'carbon_footprint',
+            'Detailed Description' => 'detailed_description',
+            'Display Name (Product Title on website)' => 'display_name',
+            'Depth of Box' => 'depth_of_box',
+            'Featured Description' => 'featured_description',
+            'Flat Packed or Assembled' => 'flat_packed_or_assembled',
+            'Gross Weight of Box' => 'gross_weight_of_box',
+            'Headrest Type' => 'headrest_type',
+            'Height Of Box (MM)' => 'height_of_box_mm',
+            'Manufacturer' => 'manufacturer',
+            'Overall Depth' => 'overall_depth',
+            'Overall Height' => 'overall_height',
+            'Overall Width' => 'overall_width',
+            'Preferred Location' => 'preferred_location',
+            'Product Weight' => 'product_weight',
+            'RRP' => 'rrp',
+            'Recommended Usage' => 'recommended_usage',
+            'SI EORI Number' => 'si_eori_number',
+            'Seat Depth' => 'seat_depth',
+            'Seat Height' => 'seat_height',
+            'Seat Width' => 'seat_width',
+            'Store Description' => 'store_description',
+            'Store Display Name' => 'store_display_name',
+            'Weight' => 'weight',
+            'Weight Units' => 'weight_units',
+            'Width of Box' => 'width_of_box',
+            'Filing Drawers' => 'filing_drawers',
+            'Height Under Desk' => 'height_under_desk',
+            'Internal Drawer Depth' => 'internal_drawer_depth',
+            'Internal Drawer Height' => 'internal_drawer_height',
+            'Leg Type' => 'leg_type',
+            'Number of Drawers' => 'number_of_drawers',
+            'No of Shelves' => 'no_of_shelves',
+            'Test Certificate' => 'test_certificate',
+            'Thickness' => 'thickness',
+            'Type of Goods' => 'type_of_goods',
+            'Warranty' => 'warranty',
+            'Max. Weight Supported' => 'max_weight_supported',
+            'Visibility' => 'visibility',
+            'Cost Esitmate Type' => 'cost_estimate_type',
+            'EXTERNAL SYSTEMS (2)' => 'external_systems_2',
+            'Material' => 'material',
+            'Option1Name' => 'option1_name',
+            'Option1Value' => 'option1_value',
+            'Option2Name' => 'option2_name',
+            'Option2Value' => 'option2_value',
+            'Option3Name' => 'option3_name',
+            'Option3Value' => 'option3_value'
+        ];
+
+        $row_count = 0;
+        while (($row = fgetcsv($handle)) !== false) {
+            $data = [];
+            foreach ($columns as $i => $col) {
+                $col = trim($col);
+                if (isset($csv_to_db_map[$col])) {
+                    $dbcol = $csv_to_db_map[$col];
+                    $value = isset($row[$i]) ? $row[$i] : '';
+                    
+                    // Handle decimal fields
+                    if (in_array($dbcol, ['price_price', 'supplier_price', 'next_day_cost', 'standard_delivery_cost', 'rrp'])) {
+                        $value = is_numeric($value) ? floatval($value) : null;
+                    }
+                    
+                    $data[$dbcol] = $value;
+                }
+            }
+
+            if (!empty($data)) {
+                $wpdb->insert($wpdb->prefix . 'dynamic_seating_config', $data);
+                $row_count++;
+            }
+        }
+        fclose($handle);
+        
+        if ($row_count == 0) {
+            return ['success' => false, 'error' => 'No valid records found in CSV.'];
+        }
+        return ['success' => true, 'count' => $row_count];
+    }
+
+    private function render_dos_table() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'dynamic_seating_config';
+        $results = $wpdb->get_results("SELECT * FROM $table_name LIMIT 100", ARRAY_A);
+        $row_count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+
+        echo '<h2>DOS Configuration Data</h2>';
+        echo '<ul style="margin-bottom:20px;">';
+        echo "<li><strong>Total rows:</strong> " . intval($row_count) . "</li>";
+        echo "<li><strong>Showing:</strong> First 100 records</li>";
+        echo '</ul>';
+
+        if (empty($results)) {
+            echo "<p>No data found.</p>";
+            return;
+        }
+
+        // Create a horizontally scrollable table
+        echo '<div style="overflow-x: auto; margin-bottom: 20px;">';
+        echo '<table class="widefat" style="min-width: 100%; white-space: nowrap;"><thead><tr>';
+        foreach ($results[0] as $col => $val) {
+            echo "<th style='min-width: 120px; padding: 8px;'>" . esc_html(ucwords(str_replace('_', ' ', $col))) . "</th>";
+        }
+        echo '</tr></thead><tbody>';
+        foreach ($results as $row) {
+            echo '<tr>';
+            foreach ($row as $val) {
+                echo '<td style="padding: 8px; border-right: 1px solid #ddd;">' . esc_html($val) . '</td>';
+            }
+            echo '</tr>';
+        }
+        echo '</tbody></table>';
+        echo '</div>';
     }
 }
