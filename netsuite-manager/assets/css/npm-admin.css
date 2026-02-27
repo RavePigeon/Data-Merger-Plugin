@@ -1,0 +1,227 @@
+/**
+ * NetSuite Product Manager - Admin Styles
+ */
+
+/* Stats Grid */
+.npm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 30px 0;
+}
+
+/* Cards */
+.npm-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    box-shadow: 0 1px 1px rgba(0,0,0,.04);
+}
+
+.npm-card h2 {
+    margin-top: 0;
+    font-size: 16px;
+    font-weight: 600;
+    border-bottom: 1px solid #f0f0f1;
+    padding-bottom: 12px;
+    margin-bottom: 15px;
+}
+
+.npm-card h3 {
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+/* Card Variants */
+.npm-card-primary {
+    border-left: 4px solid #2271b1;
+}
+
+.npm-card-success {
+    border-left: 4px solid #00a32a;
+    background: #f0f6fc;
+}
+
+.npm-card-warning {
+    border-left: 4px solid #dba617;
+    background: #fff3cd;
+}
+
+.npm-card-error {
+    border-left: 4px solid #d63638;
+    background: #fcf0f1;
+}
+
+/* Stat Lists */
+.npm-stat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.npm-stat-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.npm-stat-list li:last-child {
+    border-bottom: none;
+}
+
+.npm-stat-label {
+    color: #646970;
+    font-size: 14px;
+}
+
+.npm-stat-warning {
+    background: #fff3cd;
+    padding: 12px !important;
+    border-radius: 4px;
+}
+
+/* Text Colors */
+.npm-text-primary {
+    color: #2271b1;
+}
+
+.npm-text-success {
+    color: #00a32a;
+}
+
+.npm-text-warning {
+    color: #996800;
+}
+
+.npm-text-danger {
+    color: #d63638;
+}
+
+.npm-text-muted {
+    color: #646970;
+}
+
+/* Badges */
+.npm-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.npm-badge-primary {
+    background: #2271b1;
+    color: #fff;
+}
+
+.npm-badge-success {
+    background: #00a32a;
+    color: #fff;
+}
+
+.npm-badge-warning {
+    background: #d63638;
+    color: #fff;
+}
+
+.npm-badge-info {
+    background: #2271b1;
+    color: #fff;
+}
+
+/* Action Buttons */
+.npm-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.npm-action-buttons .button {
+    justify-content: center;
+}
+
+/* Workflow Steps */
+.npm-workflow-steps {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0 0 0;
+    counter-reset: step-counter;
+}
+
+.npm-workflow-steps li {
+    position: relative;
+    padding: 20px 20px 20px 60px;
+    border-left: 2px solid #dcdcde;
+    counter-increment: step-counter;
+}
+
+.npm-workflow-steps li:last-child {
+    border-left: none;
+}
+
+.npm-workflow-steps li::before {
+    content: counter(step-counter);
+    position: absolute;
+    left: -15px;
+    top: 20px;
+    width: 30px;
+    height: 30px;
+    background: #fff;
+    border: 2px solid #dcdcde;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.npm-workflow-steps li.npm-step-complete::before {
+    background: #00a32a;
+    border-color: #00a32a;
+    color: #fff;
+    content: "✓";
+}
+
+.npm-step-status {
+    display: block;
+    color: #646970;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.npm-workflow-steps li p {
+    margin: 5px 0 0 0;
+    color: #646970;
+    font-size: 13px;
+}
+
+/* Upload Progress */
+.npm-upload-progress {
+    display: none;
+    padding: 15px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    margin: 15px 0;
+}
+
+.npm-upload-progress.active {
+    display: block;
+}
+
+/* Responsive */
+@media (max-width: 782px) {
+    .npm-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .npm-workflow-steps li {
+        padding-left: 40px;
+    }
+}
